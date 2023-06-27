@@ -3,89 +3,84 @@ using static System.Console;
 using System.Drawing;
 using System.Drawing.Imaging;
 
-Bitmap imagemOriginal = new Bitmap("diferenca4.png");
+//Imagem que estamos fazendo o esqueleto
+Bitmap imagemOriginal = new Bitmap("imagem.png");
 
+//Imagem após limpeza de pixels "sujos"
 Bitmap novaImagem = Cor(imagemOriginal);
-novaImagem.Save("1.png");
+novaImagem.Save("Cor.png");
 
+//Imagem finalizada com o esqueleto
 Bitmap imagemFinal = Esqueleto(novaImagem);
-imagemFinal.Save("1.png");
+imagemFinal.Save("Esqueleto.png");
 
+//Função para a limpeza da imagem
 Bitmap Cor(Bitmap imagem)
 {
-    for(int i = 0; i < imagem.Height; i++) 
+    //Percorrendo a imagem (horizontalmente)
+    for (int j = 0; j < imagem.Height; j++)
     {
-        for(int j = 0; j < imagem.Width; j++)
-        {
-            Color pixel = imagem.GetPixel(j, i);
-            // WriteLine($"Linha: {i}, pixel: {pixel}");
-            if (pixel != Color.FromArgb(255, 255, 255, 255))
-            {
-                imagem.SetPixel(j, i, Color.Red);
-                // fim = j;
-                // count++;
-            }
-        }
-        
-        // WriteLine($"Linha: {i}, Count: {count}");
-        // imagem.SetPixel((fim-count/2), i, Color.Red);
-    }
-
-    //Teste vertical (apagando esse for o código volta ao normal)
-    for (int i = 0; i < imagem.Width; i++)
-    {
-        int inicio = -1;
-        int fim = 0;
-        int count = 0;
-
-        for (int j = 0; j < imagem.Height; j++)
+        for (int i = 0; i < imagem.Width; i++)
         {
             Color pixel = imagem.GetPixel(i, j);
 
-            if (pixel == Color.FromArgb(255, 255, 0, 0))
-            {
-                // imagem.SetPixel(i, j, Color.White);
-                if (inicio == -1)
-                {
-                    inicio = j;
-                }
-                count++;
-            }
-            if (inicio != -1)
-            {
-                if (pixel != Color.FromArgb(255, 255, 0, 0))
-                {
-                    if (count > 250 && count < 400)
-                    {
-                        fim = j;
-                        int meio = (inicio + fim) / 2;
-                        imagem.SetPixel(i, inicio, Color.Black);
-                        imagem.SetPixel(i, fim, Color.Black);
-                        imagem.SetPixel(i, meio-50, Color.Black);
-                        inicio = -1;
-                        count = 0;
-                    }
-                    else 
-                        inicio = -1;
-                }
-            }
+            imagem.SetPixel(i, j, pixel == Color.FromArgb(255, 0, 0, 0) ? Color.Red : Color.White);
         }
     }
+
+    //Percorrendo a imagem verticalmente
+    // for (int i = 0; i < imagem.Width; i++)
+    // {
+    //     int inicio = -1;
+    //     int fim = 0;
+    //     int count = 0;
+
+    //     for (int j = 0; j < imagem.Height; j++)
+    //     {
+    //         Color pixel = imagem.GetPixel(i, j);
+
+    //         if (pixel == Color.FromArgb(255, 255, 0, 0))
+    //         {
+    //             // imagem.SetPixel(i, j, Color.White);
+    //             if (inicio == -1)
+    //                 inicio = j;
+    //             count++;
+    //         }
+    //         if (inicio != -1)
+    //         {
+    //             if (pixel != Color.FromArgb(255, 255, 0, 0))
+    //             {
+    //                 if (count > 250 && count < 400)
+    //                 {
+    //                     fim = j;
+    //                     int meio = (inicio + fim) / 2;
+    //                     imagem.SetPixel(i, inicio, Color.Black);
+    //                     imagem.SetPixel(i, fim, Color.Black);
+    //                     imagem.SetPixel(i, meio - 50, Color.Black);
+    //                     inicio = -1;
+    //                     count = 0;
+    //                 }
+    //                 else
+    //                     inicio = -1;
+    //             }
+    //         }
+    //     }
+    // }
 
     return imagem;
 }
 
 Bitmap Esqueleto(Bitmap imagem)
 {
-    int pontoMaisAEsquerda = int.MaxValue;
-    int pontoMaisADireita = 0;
-    int pontoMaisAcima = int.MaxValue;
-    int pontoMaisAbaixo = 0;
+    int xEsquerda = int.MaxValue;
+    int xDireita = 0;
+    int xAcima = 0;
+    int xAbaixo = 0;
 
-    int yPontoMaisAEsquerda = 0;
-    int yPontoMaisADireita = 0;
-    int xPontoMaisAcima = 0;
-    int xPontoMaisAbaixo = 0;
+    int yEsquerda = 0;
+    int yDireita = 0;
+    int yAcima = int.MaxValue;
+    int yAbaixo = 0;
 
     for (int i = 0; i < imagem.Height; i++)
     {
@@ -109,25 +104,28 @@ Bitmap Esqueleto(Bitmap imagem)
                 soma += j;
                 count++;
 
-                if (j < pontoMaisAEsquerda)
+                if (j < xEsquerda)
                 {
-                    pontoMaisAEsquerda = j;
-                    yPontoMaisAEsquerda = i;
+                    xEsquerda = j;
+                    yEsquerda = i;
                 }
-                if (j > pontoMaisADireita)
+
+                if (j > xDireita)
                 {
-                    pontoMaisADireita = j;
-                    yPontoMaisADireita = i;
+                    xDireita = j;
+                    yDireita = i;
                 }
-                if (i < pontoMaisAcima)
+
+                if (i < yAcima)
                 {
-                    pontoMaisAcima = i;
-                    xPontoMaisAcima = j;
+                    yAcima = i;
+                    xAcima = j;
                 }
-                if (i > pontoMaisAbaixo)
+                
+                if (i > yAbaixo)
                 {
-                    pontoMaisAbaixo = i;
-                    xPontoMaisAbaixo = j;
+                    yAbaixo = i;
+                    xAbaixo = j;
                 }
             }
             else if (inicio != -1)
@@ -144,35 +142,38 @@ Bitmap Esqueleto(Bitmap imagem)
         }
     }
 
-
     // Adicionar pixels vermelhos nos pontos encontrados
-        imagem.SetPixel(pontoMaisAEsquerda, yPontoMaisAEsquerda, Color.Red);
-        imagem.SetPixel(pontoMaisADireita, yPontoMaisADireita, Color.Red);
-        imagem.SetPixel(xPontoMaisAcima, pontoMaisAcima, Color.Red);
-        imagem.SetPixel(xPontoMaisAbaixo, pontoMaisAbaixo, Color.Red);
+    imagem.SetPixel(xEsquerda, yEsquerda, Color.Red);
+    imagem.SetPixel(xDireita, yDireita, Color.Red);
+    imagem.SetPixel(xAcima, yAcima, Color.Red);
+    imagem.SetPixel(xAbaixo, yAbaixo, Color.Red);
 
-    for(int i = )
+    int countLinha = 0;
 
-    for (int i = pontoMaisAcima; i < pontoMaisAbaixo; i++)
+    for (int i = yAcima; i < yAbaixo; i++)
     {
-        imagem.SetPixel(xPontoMaisAcima, i, Color.Red);
+        imagem.SetPixel(xAcima, i, Color.Red);
+        countLinha++;
     }
 
-    for (int j = pontoMaisAEsquerda; j < pontoMaisADireita; j++)
-    
+    int torso = countLinha / 3;
+
+    // Create a Graphics object from the Bitmap
+    using (Graphics graphics = Graphics.FromImage(imagem))
     {
-        imagem.SetPixel(j, yPontoMaisADireita, Color.Red);
+        // Set the pen properties for drawing the line
+        using (Pen pen = new Pen(Color.Red, 2))
+        {
+            // Define the points to be connected
+            Point point1 = new Point(xEsquerda, yEsquerda); // Replace x1 and y1 with your first point's coordinates
+            Point point2 = new Point(xAcima, torso); // Replace x2 and y2 with your second point's coordinates
+            Point point3 = new Point(xDireita, yDireita); // Replace x2 and y2 with your second point's coordinates
+
+            // Draw a line connecting the two points
+            graphics.DrawLine(pen, point1, point2);
+            graphics.DrawLine(pen, point2, point3);
+        }
     }
 
     return imagem;
 }
-
-
-
-
-
-
-// Bitmap detectarMao(Bitmap imagem)
-// {
-
-// }

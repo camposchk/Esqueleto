@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "dppMa6MwyD/R2b+fuvtg5r3tG0sUCYsUqmGHGTYU+wSlqMa+Gae47XtuTPZvX0R4Q8JDOEJ1VSAohynPY0pwBA==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\disrct\\Desktop\\testec# - Copia\\Esqueleto\\testec#.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\disrct\\.nuget\\packages\\microsoft.netcore.platforms\\5.0.0\\microsoft.netcore.platforms.5.0.0.nupkg.sha512",
+    "C:\\Users\\disrct\\.nuget\\packages\\microsoft.win32.systemevents\\5.0.0\\microsoft.win32.systemevents.5.0.0.nupkg.sha512",
+    "C:\\Users\\disrct\\.nuget\\packages\\system.drawing.common\\5.0.2\\system.drawing.common.5.0.2.nupkg.sha512"
+  ],
+  "logs": []
+}
