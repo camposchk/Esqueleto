@@ -49,7 +49,6 @@ Bitmap Esqueleto(Bitmap imagem)
     for (int j = 0; j < imagem.Height; j++)
     {
         int inicio = -1;
-        int fim = 0;
         int soma = 0;
 
         for (int i = 0; i < imagem.Width; i++)
@@ -63,8 +62,7 @@ Bitmap Esqueleto(Bitmap imagem)
                 //Primeiro ponto vermelho encontrado
                 if (inicio == -1)
                     inicio = i;
-    
-                fim = i;
+
                 soma += i;
                 count++;
 
@@ -98,11 +96,11 @@ Bitmap Esqueleto(Bitmap imagem)
             }
             else if (inicio != -1)
             {
-                if (count > 40)
-                {
-                    int meio = (int)Math.Round((double)soma / count);
-                    imagem.SetPixel(meio, j, Color.Black);
-                }
+                // if (count > 40)
+                // {
+                int meio = (int)Math.Round((double)soma / count);
+                imagem.SetPixel(meio, j, Color.Black);
+                // }
                 inicio = -1;
                 soma = 0;
                 count = 0;
@@ -124,20 +122,84 @@ Bitmap Esqueleto(Bitmap imagem)
 
     int yTorso = count / 3;
 
-    // Create a Graphics object from the Bitmap
     using (Graphics graphics = Graphics.FromImage(imagem))
     {
-        // Set the pen properties for drawing the line
-        using (Pen pen = new Pen(Color.Red, 2))
+        // Set the pen properties for drawing the rectangles
+        using (Pen pen = new(Color.Red, 2))
         {
-            // Define the points to be connected
-            Point point1 = new Point(xEsquerda, yEsquerda); // Replace x1 and y1 with your first point's coordinates
-            Point point2 = new Point(xAcima, yTorso); // Replace x2 and y2 with your second point's coordinates
-            Point point3 = new Point(xDireita, yDireita); // Replace x2 and y2 with your second point's coordinates
+            Point point1 = new(xEsquerda, yEsquerda);
+            Point point2 = new(xAcima, yTorso);
+            Point point3 = new(xDireita, yDireita);
 
             // Draw a line connecting the two points
             graphics.DrawLine(pen, point1, point2);
             graphics.DrawLine(pen, point2, point3);
+
+            // Define the rectangles
+            // Rectangle retangulo1 = new(xEsquerda, yEsquerda, 70, 50);
+            Rectangle retangulo2 = new(xDireita - 40, yDireita - 15, 40, 45);
+
+            // Draw the rectangles
+            // graphics.DrawRectangle(pen, retangulo1);
+            graphics.DrawRectangle(pen, retangulo2);
+
+            // Calculate the bounding rectangle of the left hand
+            int yAcimaMaoEsquerda = int.MaxValue;
+            int yAbaixoMaoEsquerda = 0;
+
+            for (int j = 0; j < imagem.Height; j++)
+            {
+                for (int i = xEsquerda; i < xEsquerda + 70; i++)
+                {
+                    Color pixel = imagem.GetPixel(i, j);
+
+                    if (pixel == Color.FromArgb(255, 0, 0, 0))
+                    {
+                        // Topmost point
+                        if (j < yAcimaMaoEsquerda)
+                            yAcimaMaoEsquerda = j;
+
+                        // Bottommost point
+                        if (j > yAbaixoMaoEsquerda)
+                            yAbaixoMaoEsquerda = j;
+                    }
+                }
+            }
+
+            // Define the bounding rectangle of the left hand
+            Rectangle retanguloMaoEsquerda =
+                new(xEsquerda, yAcimaMaoEsquerda, 70, yAbaixoMaoEsquerda - yAcimaMaoEsquerda);
+
+            // Draw the bounding rectangle of the left hand
+            graphics.DrawRectangle(pen, retanguloMaoEsquerda);
+
+            // Calculate the bounding rectangle of the left hand
+            int xEsquerdaCabeca = int.MaxValue;
+            int xDireitaCabeca = 0;
+
+            for (int j = yAcima; j < yAcima + 120; j++)
+            {
+                for (int i = xAcima - 70; i < xAcima + 70; i++)
+                {
+                    Color pixel = imagem.GetPixel(i, j);
+
+                    if (pixel == Color.FromArgb(255, 0, 0, 0))
+                    {
+                        //Ponto mais a esquerda
+                        if (i < xEsquerdaCabeca)
+                            xEsquerdaCabeca = i;
+
+                        //Ponto mais a direita
+                        if (i > xDireitaCabeca)
+                            xDireitaCabeca = i;
+                    }
+                }
+            }
+
+            Rectangle retanguloCabeca =
+                new(xEsquerdaCabeca, yAcima, xDireitaCabeca - xEsquerdaCabeca, 120);
+
+            graphics.DrawRectangle(pen, retanguloCabeca);
         }
     }
 

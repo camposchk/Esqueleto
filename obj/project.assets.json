@@ -164,11 +164,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\disrct\\Desktop\\testec# - Copia\\Esqueleto\\testec#.csproj",
+      "projectUniqueName": "c:\\Users\\disrct\\Desktop\\testec# - Copia\\Esqueleto\\testec#.csproj",
       "projectName": "testec#",
-      "projectPath": "C:\\Users\\disrct\\Desktop\\testec# - Copia\\Esqueleto\\testec#.csproj",
+      "projectPath": "c:\\Users\\disrct\\Desktop\\testec# - Copia\\Esqueleto\\testec#.csproj",
       "packagesPath": "C:\\Users\\disrct\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\disrct\\Desktop\\testec# - Copia\\Esqueleto\\obj\\",
+      "outputPath": "c:\\Users\\disrct\\Desktop\\testec# - Copia\\Esqueleto\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
@@ -224,7 +224,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.408\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.410\\RuntimeIdentifierGraph.json"
       }
     }
   }
