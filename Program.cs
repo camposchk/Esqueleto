@@ -4,18 +4,19 @@ using System.Drawing;
 using System.Drawing.Imaging;
 
 //Imagem que estamos fazendo o esqueleto
-Bitmap imagemOriginal = new Bitmap("imagem.png");
+Bitmap imagemOriginal = new("imagem.png");
+
+DateTime dateTime = DateTime.Now;
 
 //Imagem finalizada com o esqueleto
-DateTime dateTime = DateTime.Now;
-Bitmap imagemFinal = Esqueleto(imagemOriginal);
+Bitmap imagemFinal = (Bitmap)Esqueleto(imagemOriginal);
 var time = DateTime.Now - dateTime;
 
 WriteLine(time.TotalMilliseconds);
 
 imagemFinal.Save("Esqueleto.png");
 
-Bitmap Esqueleto(Bitmap imagem)
+static unsafe object Esqueleto(Bitmap imagem)
 {
     //Coordenadas extremidades
     int xEsquerda = int.MaxValue;
@@ -30,6 +31,14 @@ Bitmap Esqueleto(Bitmap imagem)
 
     int count = 0;
 
+    var data = imagem.LockBits(
+        new Rectangle(0, 0, imagem.Width, imagem.Height),
+        ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb
+    );
+
+    byte* im = (byte*)data.Scan0.ToPointer();
+    var stride = data.Stride;
+
     for (int j = 0; j < imagem.Height; j++)
     {
         int inicio = -1;
@@ -37,13 +46,16 @@ Bitmap Esqueleto(Bitmap imagem)
 
         for (int i = 0; i < imagem.Width; i++)
         {
-            Color pixel = imagem.GetPixel(i, j);
+            int index = 3 * i + j * stride;
+            byte b = im[index + 0]; 
+            byte g = im[index + 1];
+            byte r = im[index + 2];
 
-            if (pixel == Color.FromArgb(255, 0, 0, 0))
+            if (b == 0 && r == 0 && g == 0)
             {
                 // imagem.SetPixel(i, j, Color.White);
 
-                //Primeiro ponto vermelho encontrado
+                //Primeiro ponto preto encontrado
                 if (inicio == -1)
                     inicio = i;
 
@@ -80,11 +92,10 @@ Bitmap Esqueleto(Bitmap imagem)
             }
             else if (inicio != -1)
             {
-                // if (count > 40)
-                // {
-                int meio = (int)Math.Round((double)soma / count);
-                imagem.SetPixel(meio, j, Color.Black);
-                // }
+
+                int xMeio = (int)Math.Round((double)soma / count);
+                int yMeio = j;
+
                 inicio = -1;
                 soma = 0;
                 count = 0;
@@ -92,310 +103,309 @@ Bitmap Esqueleto(Bitmap imagem)
         }
     }
 
-    // Adicionar pixels vermelhos nos pontos encontrados
-    imagem.SetPixel(xEsquerda, yEsquerda, Color.Red);
-    imagem.SetPixel(xDireita, yDireita, Color.Red);
-    imagem.SetPixel(xAcima, yAcima, Color.Red);
-    imagem.SetPixel(xAbaixo, yAbaixo, Color.Red);
-
     for (int j = yAcima; j < yAbaixo; j++)
     {
-        // imagem.SetPixel(xAcima, j, Color.Red);
         count++;
     }
 
     int yTorso = count / 3;
     int yPerna = 3 * count / 5;
 
-    using (Graphics graphics = Graphics.FromImage(imagem))
+    int yAcimaMaoEsquerda = int.MaxValue;
+    int yAbaixoMaoEsquerda = 0;
+
+    for (int j = 0; j < imagem.Height; j++)
     {
-        using (Pen pen = new(Color.Red, 2))
+        for (int i = xEsquerda; i < xEsquerda + 70; i++)
         {
-            Point pointAcima = new(xAcima, yAcima);
-            Point pointAbaixo = new(xAcima, yAbaixo);
+            int index = 3 * i + j * stride;
+            byte b = im[index + 0]; 
+            byte g = im[index + 1];
+            byte r = im[index + 2];
 
-            // graphics.DrawLine(pen, pointAcima, pointAbaixo);
-            
-            Point pointEsquerda = new(xEsquerda, yEsquerda);
-            // Point pointTorso = new(xAcima, yTorso);
-            Point pointDireita = new(xDireita, yDireita);
-
-            // graphics.DrawLine(pen, pointEsquerda, pointTorso);
-            // graphics.DrawLine(pen, pointTorso, pointDireita);
-
-            // Rectangle retangulo1 = new(xEsquerda, yEsquerda, 70, 50);
-            // Rectangle retangulo2 = new(xDireita - 40, yDireita - 15, 40, 45);
-
-            // graphics.DrawRectangle(pen, retangulo1);
-            // graphics.DrawRectangle(pen, retangulo2);
-
-            int yAcimaMaoEsquerda = int.MaxValue;
-            int yAbaixoMaoEsquerda = 0;
-
-            for (int j = 0; j < imagem.Height; j++)
+            if (b == 0 && r == 0 && g == 0)
             {
-                for (int i = xEsquerda; i < xEsquerda + 70; i++)
-                {
-                    Color pixel = imagem.GetPixel(i, j);
+                if (j < yAcimaMaoEsquerda)
+                    yAcimaMaoEsquerda = j;
 
-                    if (pixel == Color.FromArgb(255, 0, 0, 0))
-                    {
-                        if (j < yAcimaMaoEsquerda)
-                            yAcimaMaoEsquerda = j;
-
-                        if (j > yAbaixoMaoEsquerda)
-                            yAbaixoMaoEsquerda = j;
-                    }
-                }
+                if (j > yAbaixoMaoEsquerda)
+                    yAbaixoMaoEsquerda = j;
             }
-
-            Rectangle retanguloMaoEsquerda = new(xEsquerda, yAcimaMaoEsquerda, 70, yAbaixoMaoEsquerda - yAcimaMaoEsquerda);
-
-            graphics.DrawRectangle(pen, retanguloMaoEsquerda);
-
-            int yAcimaMaoDireita = int.MaxValue;
-            int yAbaixoMaoDireita = 0;
-
-            for (int j = 0; j < imagem.Height; j++)
-            {
-                for (int i = xDireita - 40 ; i < xDireita; i++)
-                {
-                    Color pixel = imagem.GetPixel(i, j);
-
-                    if (pixel == Color.FromArgb(255, 0, 0, 0))
-                    {
-                        if (j < yAcimaMaoDireita)
-                            yAcimaMaoDireita = j;
-
-                        if (j > yAbaixoMaoDireita)
-                            yAbaixoMaoDireita = j;
-                    }
-                }
-            }
-
-            Rectangle retanguloMaoDireita = new(xDireita - 40, yAcimaMaoDireita, 40, yAbaixoMaoDireita - yAcimaMaoDireita);
-
-            graphics.DrawRectangle(pen, retanguloMaoDireita);
-
-            int xEsquerdaCabeca = int.MaxValue;
-            int xDireitaCabeca = 0;
-
-            for (int j = yAcima; j < yAcima + 120; j++)
-            {
-                for (int i = xAcima - 70; i < xAcima + 70; i++)
-                {
-                    Color pixel = imagem.GetPixel(i, j);
-
-                    if (pixel == Color.FromArgb(255, 0, 0, 0))
-                    {
-                        //Ponto mais a esquerda
-                        if (i < xEsquerdaCabeca)
-                            xEsquerdaCabeca = i;
-
-                        //Ponto mais a direita
-                        if (i > xDireitaCabeca)
-                            xDireitaCabeca = i;
-                    }
-                }
-            }
-
-            Rectangle retanguloCabeca = new(xEsquerdaCabeca, yAcima, xDireitaCabeca - xEsquerdaCabeca, 120);
-
-            int xMeioRetanguloCabeca = xDireitaCabeca - (xDireitaCabeca - xEsquerdaCabeca) / 2;
-
-            Point pointCabeca = new(xMeioRetanguloCabeca, yAcima);
-
-            graphics.DrawRectangle(pen, retanguloCabeca);
-
-            int xEsquerdaPerna = int.MaxValue;
-            int xDireitaPerna = 0;
-
-            for (int j = yPerna; j < yAbaixo; j++)
-            {
-                for (int i = 0; i < imagem.Width; i++)
-                {
-                    Color pixel = imagem.GetPixel(i, j);
-
-                    if (pixel == Color.FromArgb(255, 0, 0, 0))
-                    {
-                        //Ponto mais a esquerda
-                        if (i < xEsquerdaPerna)
-                            xEsquerdaPerna = i;
-
-                        //Ponto mais a direita
-                        if (i > xDireitaPerna)
-                            xDireitaPerna = i;
-                    }
-                }
-            }
-
-            Rectangle retanguloPerna = new(xEsquerdaPerna, yPerna, xDireitaPerna - xEsquerdaPerna, yAbaixo - yPerna);
-
-            // graphics.DrawRectangle(pen, retanguloPerna);
-
-            int xMeioRetanguloPerna = xDireitaPerna - (xDireitaPerna - xEsquerdaPerna) / 2;
-
-            Point pointMeioCintura = new(xMeioRetanguloPerna, yPerna);
-
-            int yAbaixoPernaEsquerda = 0;
-            int yAbaixoPernaDireita = 0;
-
-            int xAbaixoPernaEsquerda = 0;
-            int xAbaixoPernaDireita = 0;
-
-            for (int j = 0; j < imagem.Height; j++)
-            {
-                for (int i = xEsquerdaPerna; i < xMeioRetanguloPerna; i++)
-                {
-                    Color pixel = imagem.GetPixel(i, j);
-
-                    if (pixel == Color.FromArgb(255, 0, 0, 0))
-                    {
-                        if (j > yAbaixoPernaEsquerda)
-                            yAbaixoPernaEsquerda = j;
-                            xAbaixoPernaEsquerda = i;
-                    }
-                }
-            }
-
-            for (int j = 0; j < imagem.Height; j++)
-            {
-                for (int i = xMeioRetanguloPerna; i < xDireitaPerna; i++)
-                {
-                    Color pixel = imagem.GetPixel(i, j);
-
-                    if (pixel == Color.FromArgb(255, 0, 0, 0))
-                    {
-                        if (j > yAbaixoPernaDireita)
-                            yAbaixoPernaDireita = j;
-                            xAbaixoPernaDireita = i;
-                    }
-                }
-            }
-
-            Point pointPeEsquerdo = new(xAbaixoPernaEsquerda, yAbaixoPernaEsquerda);
-            Point pointPeDireito = new(xAbaixoPernaDireita, yAbaixoPernaDireita);
-
-            Point pointJoelhoEsquerdo = new(xAbaixoPernaEsquerda, yAbaixoPernaEsquerda - (yAbaixoPernaEsquerda - yPerna) / 2);
-            Point pointJoelhoDireito = new(xAbaixoPernaDireita, yAbaixoPernaDireita - (yAbaixoPernaDireita - yPerna) / 2);
-
-            float fatorInterpolacao = (float)(yTorso - pointCabeca.Y) / (pointMeioCintura.Y - pointCabeca.Y);
-            int xInterpolado = pointCabeca.X + (int)((pointMeioCintura.X - pointCabeca.X) * fatorInterpolacao);
-            Point pointTorso = new(xInterpolado, yTorso);
-
-            // graphics.DrawLine(pen, pointMeioCintura, pointPeEsquerdo);
-            // graphics.DrawLine(pen, pointMeioCintura, pointPeDireito);
-
-            graphics.DrawLine(pen, pointPeEsquerdo, pointJoelhoEsquerdo);
-            graphics.DrawLine(pen, pointPeDireito, pointJoelhoDireito);
-
-            graphics.DrawLine(pen, pointJoelhoEsquerdo, pointMeioCintura);
-            graphics.DrawLine(pen, pointJoelhoDireito, pointMeioCintura);
-
-            graphics.DrawLine(pen, pointCabeca, pointMeioCintura);
-
-            // graphics.DrawLine(pen, pointEsquerda, pointTorso);
-            // graphics.DrawLine(pen, pointTorso, pointDireita);
-
-            Point pointMeioBracoEsquerdo = new((pointEsquerda.X + pointTorso.X) / 2, (pointEsquerda.Y + pointTorso.Y) / 2);
-            Point pointMeioBracoDireito = new((pointDireita.X + pointTorso.X) / 2, (pointDireita.Y + pointTorso.Y) / 2);
-
-            Point pointEsqInfCabeca = new(xEsquerdaCabeca, yAcima + 120);
-            Point pointDirInfCabeca = new(xDireitaCabeca, yAcima + 120);
-
-            // graphics.DrawLine(pen, pointEsqInfCabeca, pointMeioBracoEsquerdo);
-            // graphics.DrawLine(pen, pointMeioBracoDireito, pointDirInfCabeca);
-
-            // graphics.DrawLine(pen, pointEsqInfCabeca, pointTorso);
-            // graphics.DrawLine(pen, pointTorso, pointDirInfCabeca);
-
-            int xOmbroEsquerdo = (int)((pointMeioBracoEsquerdo.X + pointEsqInfCabeca.X + pointTorso.X) / 3);
-            int yOmbroEsquerdo = (int)((pointMeioBracoEsquerdo.Y + pointEsqInfCabeca.Y + pointTorso.Y) / 3);
-
-            int xOmbroDireito = (int)((pointMeioBracoDireito.X + pointDirInfCabeca.X + pointTorso.X) / 3);
-            int yOmbroDireito = (int)((pointMeioBracoDireito.Y + pointDirInfCabeca.Y + pointTorso.Y) / 3);
-
-            Point pointOmbroEsquerdo = new(xOmbroEsquerdo, yOmbroEsquerdo);
-            Point pointOmbroDireito = new(xOmbroDireito, yOmbroDireito);
-
-            // graphics.DrawLine(pen, pointEsquerda, pointOmbroEsquerdo);
-            // graphics.DrawLine(pen, pointDireita, pointOmbroDireito);
-
-            Point pointMeioMaoOmbroEsquerdo = new((pointEsquerda.X + pointOmbroEsquerdo.X) / 2, yEsquerda);
-
-            int yAbaixoCotoveloEsquerdo = 0;
-            int yAcimaCotoveloEsquerdo = int.MaxValue;
-
-            for(int j = 0; j < imagem.Height; j++)
-            {   
-                Color pixel = imagem.GetPixel(pointMeioMaoOmbroEsquerdo.X, j);
-                if (pixel == Color.FromArgb(255, 0, 0, 0))
-                {
-                    if(j > yAbaixoCotoveloEsquerdo)
-                        yAbaixoCotoveloEsquerdo = j;      
-
-                    if(j < yAcimaCotoveloEsquerdo)
-                        yAcimaCotoveloEsquerdo = j;       
-                }
-                
-            }
-
-            Point pointCotoveloEsquerdo = new(pointMeioMaoOmbroEsquerdo.X, yAbaixoCotoveloEsquerdo - (yAbaixoCotoveloEsquerdo - yAcimaCotoveloEsquerdo) / 2);
-            graphics.DrawLine(pen, pointEsquerda, pointCotoveloEsquerdo);
-            graphics.DrawLine(pen, pointCotoveloEsquerdo, pointOmbroEsquerdo);
-            graphics.DrawLine(pen, pointOmbroEsquerdo, pointTorso);
-
-            Point pointMeioMaoOmbroDireito = new((pointDireita.X + pointOmbroDireito.X) / 2, yDireita);
-
-            int yAbaixoCotoveloDireito = 0;
-            int yAcimaCotoveloDireito = int.MaxValue;
-
-            for(int j = 0; j < imagem.Height; j++)
-            {   
-                Color pixel = imagem.GetPixel(pointMeioMaoOmbroDireito.X, j);
-                if (pixel == Color.FromArgb(255, 0, 0, 0))
-                {
-                    if(j > yAbaixoCotoveloDireito)
-                        yAbaixoCotoveloDireito = j;      
-
-                    if(j < yAcimaCotoveloDireito)
-                        yAcimaCotoveloDireito = j;       
-                }
-                
-            }
-
-            Point pointCotoveloDireito = new(pointMeioMaoOmbroDireito.X, yAbaixoCotoveloDireito - (yAbaixoCotoveloDireito - yAcimaCotoveloDireito) / 2);
-            graphics.DrawLine(pen, pointDireita, pointCotoveloDireito);
-            graphics.DrawLine(pen, pointCotoveloDireito, pointOmbroDireito);
-            graphics.DrawLine(pen, pointOmbroDireito, pointTorso);
-            
-
-            Point pointPulso = new((pointEsquerda.X + pointCotoveloEsquerdo.X) / 2, yEsquerda);
-            // graphics.DrawLine(pen, pointEsquerda, pointPulso);
-
-
-            int yAbaixoPulsoEsquerdo = 0;
-
-            for(int j = 0; j < imagem.Height; j++)
-            {   
-                Color pixel = imagem.GetPixel(pointPulso.X, j);
-                // imagem.SetPixel(pointMeioMaoOmbroEsquerdo.X+1, j, Color.Blue);
-
-                if (pixel == Color.FromArgb(255, 0, 0, 0))
-                {
-                    if(j > yAbaixoPulsoEsquerdo)
-                        yAbaixoPulsoEsquerdo = j;       
-                }
-                
-            }
-            
-            Point pointPulsoFim = new(pointPulso.X, yAbaixoPulsoEsquerdo);
-
-            // graphics.DrawLine(pen, pointEsquerda, pointPulsoFim);
-
-
         }
     }
 
+    int yAcimaMaoDireita = int.MaxValue;
+    int yAbaixoMaoDireita = 0;
+
+    for (int j = 0; j < imagem.Height; j++)
+    {
+        for (int i = xDireita - 40 ; i < xDireita; i++)
+        {
+            int index = 3 * i + j * stride;
+            byte b = im[index + 0]; 
+            byte g = im[index + 1];
+            byte r = im[index + 2];
+
+            if (b == 0 && r == 0 && g == 0)
+            {
+                if (j < yAcimaMaoDireita)
+                    yAcimaMaoDireita = j;
+
+                if (j > yAbaixoMaoDireita)
+                    yAbaixoMaoDireita = j;
+            }
+        }
+    }
+
+    int xEsquerdaCabeca = int.MaxValue;
+    int xDireitaCabeca = 0;
+
+    for (int j = yAcima; j < yAcima + 120; j++)
+    {
+        for (int i = xAcima - 70; i < xAcima + 70; i++)
+        {
+            int index = 3 * i + j * stride;
+            byte b = im[index + 0]; 
+            byte g = im[index + 1];
+            byte r = im[index + 2];
+
+            if (b == 0 && r == 0 && g == 0)
+            {
+                //Ponto mais a esquerda
+                if (i < xEsquerdaCabeca)
+                    xEsquerdaCabeca = i;
+
+                //Ponto mais a direita
+                if (i > xDireitaCabeca)
+                    xDireitaCabeca = i;
+            }
+        }
+    }
+
+    int xMeioRetanguloCabeca = xDireitaCabeca - (xDireitaCabeca - xEsquerdaCabeca) / 2;
+
+    int xCabeca = xMeioRetanguloCabeca;
+    int yCabeca = yAcima;
+
+    int xEsquerdaPerna = int.MaxValue;
+    int xDireitaPerna = 0;
+
+    for (int j = yPerna; j < yAbaixo; j++)
+    {
+        for (int i = 0; i < imagem.Width; i++)
+        {
+            int index = 3 * i + j * stride;
+            byte b = im[index + 0]; 
+            byte g = im[index + 1];
+            byte r = im[index + 2];
+
+            if (b == 0 && r == 0 && g == 0)
+            {
+                //Ponto mais a esquerda
+                if (i < xEsquerdaPerna)
+                    xEsquerdaPerna = i;
+
+                //Ponto mais a direita
+                if (i > xDireitaPerna)
+                    xDireitaPerna = i;
+            }
+        }
+    }
+    int xMeioRetanguloPerna = xDireitaPerna - (xDireitaPerna - xEsquerdaPerna) / 2;
+
+    int xMeioCintura = xMeioRetanguloPerna;
+    int yMeioCintura = yPerna;
+
+    int yAbaixoPernaEsquerda = 0;
+    int yAbaixoPernaDireita = 0;
+
+    int xAbaixoPernaEsquerda = 0;
+    int xAbaixoPernaDireita = 0;
+
+    for (int j = 0; j < imagem.Height; j++)
+    {
+        for (int i = xEsquerdaPerna; i < xMeioRetanguloPerna; i++)
+        {
+            int index = 3 * i + j * stride;
+            byte b = im[index + 0]; 
+            byte g = im[index + 1];
+            byte r = im[index + 2];
+
+            if (b == 0 && r == 0 && g == 0)
+            {
+                if (j > yAbaixoPernaEsquerda)
+                    yAbaixoPernaEsquerda = j;
+                    xAbaixoPernaEsquerda = i;
+            }
+        }
+    }
+
+    for (int j = 0; j < imagem.Height; j++)
+    {
+        for (int i = xMeioRetanguloPerna; i < xDireitaPerna; i++)
+        {
+            int index = 3 * i + j * stride;
+            byte b = im[index + 0]; 
+            byte g = im[index + 1];
+            byte r = im[index + 2];
+
+            if (b == 0 && r == 0 && g == 0)
+            {
+                if (j > yAbaixoPernaDireita)
+                    yAbaixoPernaDireita = j;
+                    xAbaixoPernaDireita = i;
+            }
+        }
+    }
+
+    int xPeEsquerdo = xAbaixoPernaEsquerda;
+    int yPeEsquerdo = yAbaixoPernaEsquerda;
+
+    int xPeDireito = xAbaixoPernaDireita;
+    int yPeDireito = yAbaixoPernaDireita;
+
+    int xJoelhoEsquerdo = xAbaixoPernaEsquerda;
+    int yJoelhoEsquerdo = yAbaixoPernaEsquerda - (yAbaixoPernaEsquerda - yPerna) / 2;
+
+    int xJoelhoDireito = xAbaixoPernaDireita;
+    int yJoelhoDireito = yAbaixoPernaDireita - (yAbaixoPernaDireita - yPerna) / 2;
+
+    float fatorInterpolacao = (float)(yTorso - yCabeca) / (yMeioCintura - yCabeca);
+    int xInterpolado = xCabeca + (int)((xMeioCintura - xCabeca) * fatorInterpolacao);
+
+    int xTorso = xInterpolado;
+    // int yTorso = yTorso;
+
+    int xMeioBracoEsquerdo = (xEsquerda + xTorso) / 2;
+    int yMeioBracoEsquerdo = (yEsquerda + yTorso) / 2;
+
+    int xMeioBracoDireito = (xDireita + xTorso) / 2;
+    int yMeioBracoDireito = (yDireita + yTorso) / 2;
+
+    int xEsqInfCabeca = xEsquerdaCabeca;
+    int yEsqInfCabeca = yAcima + 120;
+
+    int xDirInfCabeca = xDireitaCabeca;
+    int yDirInfCabeca = yAcima + 120;
+
+    int xOmbroEsquerdo = (xMeioBracoEsquerdo + xEsqInfCabeca + xTorso) / 3;
+    int yOmbroEsquerdo = (yMeioBracoEsquerdo + yEsqInfCabeca + yTorso) / 3;
+
+    int xOmbroDireito = (xMeioBracoDireito + xDirInfCabeca + xTorso) / 3;
+    int yOmbroDireito = (yMeioBracoDireito + yDirInfCabeca + yTorso) / 3;
+
+    int xMeioMaoOmbroEsquerdo = (xEsquerda + xOmbroEsquerdo) / 2;
+    int yMeioMaoOmbroEsquerdo = yEsquerda;
+
+    int yAbaixoCotoveloEsquerdo = 0;
+    int yAcimaCotoveloEsquerdo = int.MaxValue;
+
+    for(int j = 0; j < imagem.Height; j++)
+    {   
+        int index = 3 * xMeioMaoOmbroEsquerdo + j * stride;
+        byte b = im[index + 0]; 
+        byte g = im[index + 1];
+        byte r = im[index + 2];
+
+        if (b == 0 && r == 0 && g == 0)
+        {
+            if(j > yAbaixoCotoveloEsquerdo)
+                yAbaixoCotoveloEsquerdo = j;      
+
+            if(j < yAcimaCotoveloEsquerdo)
+                yAcimaCotoveloEsquerdo = j;       
+        }
+        
+    }
+
+    int xCotoveloEsquerdo = xMeioMaoOmbroEsquerdo;
+    int yCotoveloEsquerdo = yAbaixoCotoveloEsquerdo - (yAbaixoCotoveloEsquerdo - yAcimaCotoveloEsquerdo) / 2;
+
+    int xMeioMaoOmbroDireito = (xDireita + xOmbroDireito) / 2;
+    int yMeioMaoOmbroDireito = yDireita;
+
+    int yAbaixoCotoveloDireito = 0;
+    int yAcimaCotoveloDireito = int.MaxValue;
+
+    for(int j = 0; j < imagem.Height; j++)
+    {   
+        int index = 3 * xMeioMaoOmbroDireito + j * stride;
+        byte b = im[index + 0]; 
+        byte g = im[index + 1];
+        byte r = im[index + 2];
+        if (b == 0 && r == 0 && g == 0)
+        {
+            if(j > yAbaixoCotoveloDireito)
+                yAbaixoCotoveloDireito = j;      
+
+            if(j < yAcimaCotoveloDireito)
+                yAcimaCotoveloDireito = j;       
+        }
+        
+    }
+
+    int xCotoveloDireito = xMeioMaoOmbroDireito;
+    int yCotoveloDireito = yAbaixoCotoveloDireito - (yAbaixoCotoveloDireito - yAcimaCotoveloDireito) / 2;
+
+    imagem.UnlockBits(data);
+
+    using Graphics graphics = Graphics.FromImage(imagem);
+
+    using Pen pen = new(Color.Red, 2);
+
+    Point pointCabeca = new(xCabeca, yCabeca);
+
+    Point pointEsquerda = new(xEsquerda, yEsquerda);
+    Point pointDireita = new(xDireita, yDireita);
+
+    Point pointCotoveloEsquerdo = new(xCotoveloEsquerdo, yCotoveloEsquerdo);
+    Point pointCotoveloDireito = new(xCotoveloDireito, yCotoveloDireito);
+
+    Point pointOmbroEsquerdo = new(xOmbroEsquerdo, yOmbroEsquerdo);
+    Point pointOmbroDireito = new(xOmbroDireito, yOmbroDireito);
+
+    Point pointTorso = new(xTorso, yTorso);
+
+    Point pointCintura = new(xMeioCintura, yMeioCintura);
+
+    Point pointJoelhoEsquerdo = new(xJoelhoEsquerdo, yJoelhoEsquerdo);
+    Point pointJoelhoDireito = new(xJoelhoDireito, yJoelhoDireito);
+
+    Point pointPeEsquerdo = new(xPeEsquerdo, yPeEsquerdo);
+    Point pointPeDireito = new(xPeDireito, yPeDireito);
+
+    Point[] VerticalEsquerdo = 
+    {
+        pointCabeca,
+        pointCintura,
+        pointJoelhoEsquerdo,
+        pointPeEsquerdo
+    };
+
+    Point[] VerticalDireito = 
+    {
+        pointCabeca,
+        pointCintura,
+        pointJoelhoDireito,
+        pointPeDireito
+    };
+
+    Point[] Horizontal = 
+    {
+        pointEsquerda,
+        pointCotoveloEsquerdo,
+        pointOmbroEsquerdo,
+        pointTorso,
+        pointOmbroDireito,
+        pointCotoveloDireito,
+        pointDireita,
+    };
+
+    graphics.DrawLines(pen, Horizontal);
+    graphics.DrawLines(pen, VerticalEsquerdo);
+    graphics.DrawLines(pen, VerticalDireito);
+
     return imagem;
 }
+    
+
